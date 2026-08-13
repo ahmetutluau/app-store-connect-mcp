@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "app-store-connect": {
+      "command": "npm",
+      "args": [
+        "start"
+      ]
+    }
+  }
+}

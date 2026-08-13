@@ -1,0 +1,41 @@
+{
+  "name": "app-store-connect-mcp",
+  "version": "1.0.0",
+  "description": "App Store Connect MCP server for analytics and metadata workflows",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "node --import tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test:connection": "npm run build && node dist/test-connection.js",
+    "inspect": "npm run build && node dist/test-mcp.js",
+    "test": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "app-store-connect",
+    "claude",
+    "analytics",
+    "metadata",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "csv-parse": "^7.0.1",
+    "dotenv": "^17.4.2",
+    "jose": "^6.2.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true
+  }
+}
