@@ -3,3 +3,4 @@ dist
 .env
 *.p8
 .DS_Store
+._*

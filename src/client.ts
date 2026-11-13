@@ -16,6 +16,8 @@ type QueryValue =
   | null;
 type QueryParams = Record<string, QueryValue>;
 
+const MAX_RETRIES = 5;
+
 interface RequestOptions {
   query?: QueryParams;
   body?: unknown;
@@ -201,20 +203,32 @@ export class AppStoreConnectClient {
     path: string,
     options: RequestOptions,
   ): Promise<T> {
-    const token = await this.#jwtProvider.getToken();
     const url = buildUrl(path, options.query);
-    const response = await fetch(url, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-        ...(options.body ? { "Content-Type": "application/json" } : {}),
-        ...options.headers,
-      },
-      body: options.body ? JSON.stringify(options.body) : undefined,
-    });
+    let response: Response;
+    let responseText: string;
+    for (let attempt = 0; ; attempt++) {
+      const token = await this.#jwtProvider.getToken();
+      response = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...options.headers,
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+      });
+      responseText = await response.text();
 
-    const responseText = await response.text();
+      // Back off on rate limiting (429) and transient 5xx errors.
+      const retryable = response.status === 429 || response.status >= 500;
+      if (!retryable || attempt >= MAX_RETRIES) break;
+      const retryAfter = Number(response.headers.get("retry-after"));
+      const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : Math.min(2 ** attempt * 2000, 60_000);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
 
     if (!response.ok) {
       throw formatAppleError(response.status, responseText);

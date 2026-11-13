@@ -125,11 +125,39 @@ Production build:
 npm start
 ```
 
+## Remote mode (Streamable HTTP)
+
+By default the server talks over stdio. Set `MCP_TRANSPORT=http` to serve it over
+[Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http)
+instead, so it can sit behind an API gateway (for example Tyk MCP Gateway) or be deployed remotely.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MCP_TRANSPORT` | `stdio` | `stdio` or `http` |
+| `MCP_HTTP_HOST` | `127.0.0.1` | Interface to bind. Use `0.0.0.0` in a container |
+| `MCP_HTTP_PORT` | `8000` | Port to listen on |
+| `MCP_HTTP_PATH` | `/mcp` | MCP endpoint path |
+| `MCP_HTTP_SECRET` | — | Required in HTTP mode, at least 16 characters |
+
+Every request to the MCP endpoint must carry the secret in an `X-Upstream-Secret` header,
+otherwise it gets `401`. The idea is that only your gateway knows the secret and injects the
+header on its upstream requests, so clients cannot bypass the gateway even if they learn the
+server's address. `GET /health` is unauthenticated and returns `{"status":"ok"}`.
+
+```bash
+export MCP_HTTP_SECRET=$(openssl rand -hex 32)
+npm run start:http
+```
+
+The server runs in stateless mode: each request gets a fresh MCP server instance, so it can
+be scaled horizontally without sticky sessions.
+
 ## Scripts
 
 - `npm run dev` — run the server from TypeScript source
 - `npm run build` — compile TypeScript to `dist/`
 - `npm start` — start the built MCP server
+- `npm run start:http` — start the built MCP server over Streamable HTTP
 - `npm run test:connection` — test the App Store Connect connection
 - `npm run inspect` — run a local MCP client against the server
 
@@ -236,7 +264,7 @@ If a tool returns `403 FORBIDDEN_ERROR`, check the role attached to your App Sto
 
 ## Output behavior
 
-- `stdout` is reserved for MCP protocol traffic
+- In stdio mode, `stdout` is reserved for MCP protocol traffic
 - Logs are sent to `stderr`
 - Credentials and private key contents are never printed by this project
 
